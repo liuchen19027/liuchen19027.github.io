@@ -12,12 +12,12 @@
         }
         @media (max-width: 768px) { /* 针对小屏幕/手机 */
             html {
-                font-size: 14px; /* 手机上稍微缩小基准字体 */
+                font-size: 13px; /* 手机上进一步缩小基准字体 */
             }
         }
         @media (max-width: 480px) { /* 针对更小的手机屏幕 */
             html {
-                font-size: 12px; /* 进一步缩小 */
+                font-size: 11px; /* 进一步缩小 */
             }
         }
 
@@ -40,19 +40,22 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            border-radius: 0.5rem; /* 圆角，使用rem */
-            box-shadow: 0 0.125rem 0.3125rem rgba(0, 0, 0, 0.15); /* 阴影效果，使用rem */
-            font-size: 0.75rem; /* 字体大小，使用rem */
+            border-radius: 0.4rem; /* 圆角，略微缩小 */
+            box-shadow: 0 0.1rem 0.25rem rgba(0, 0, 0, 0.15); /* 阴影效果，略微缩小 */
+            font-size: 0.7rem; /* 字体大小，进一步缩小 */
             color: #333; /* 字体颜色 */
-            padding: 0.3rem 0.5rem; /* 内边距，使用rem */
+            padding: 0.25rem 0.4rem; /* 内边距，进一步缩小 */
             box-sizing: border-box; /* 包含padding在宽度内 */
             text-align: center;
             opacity: 0; /* 初始隐藏 */
             /* 使用transform进行居中和位移，性能更好 */
             transform: translate(-50%, -50%) scale(0.8); /* 初始缩小 */
             transition: opacity 0.5s ease-out, transform 0.5s ease-out; /* 动画过渡 */
-            white-space: nowrap; /* 文本不换行 */
-            max-width: 100px; /* 设置一个最大宽度，防止内容过长 */
+            white-space: normal; /* 允许文本换行 */
+            word-break: break-all; /* 单词内换行，防止超长英文单词撑开 */
+            max-width: 6rem; /* 最大宽度设置为rem单位，进一步缩小 */
+            min-height: 1.5rem; /* 设置最小高度，防止内容过少时太扁 */
+            line-height: 1.2; /* 行高，让文本更紧凑 */
             /* z-index 将由JS动态设置 */
         }
 
@@ -80,15 +83,9 @@
             '#7fffd4', '#ffe4e1', '#f0fff0', '#fff0f5', '#faebd7'
         ];
 
-        // 提示框的建议尺寸（会根据内容自适应，但提供一个参考）
-        // 这里的单位不再是px，而是相对大小
-        const baseTipPaddingX = 0.5; // rem
-        const baseTipPaddingY = 0.3; // rem
-        const baseFontSize = 0.75; // rem
-
-        // 适配手机端：调整窗口数量和速度
-        const totalTipsToGenerate = 80;
-        const delayBetweenTips = 400; // 毫秒
+        // --- 核心修改：减少生成总数和调整生成速度 ---
+        const totalTipsToGenerate = 45; // 从80减少到45，大大减少元素数量
+        const delayBetweenTips = 250; // 从400减少到250毫秒，加快生成速度
 
         function getRandomElement(arr) {
             return arr[Math.floor(Math.random() * arr.length)];
@@ -97,36 +94,39 @@
         // 生成心形坐标点的函数
         function getHeartCoordinates(count) {
             const points = [];
-            // 根据当前视口宽度动态调整心形大小
-            // 例如，心形宽度为视口宽度的 60%-80%
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
 
-            // 动态计算心形缩放比例，使其在屏幕上可见且比例适中
-            // 确保心形不会超出屏幕
-            const maxHeartWidth = viewportWidth * 0.7; // 心形最大宽度占视口宽度的70%
-            const maxHeartHeight = viewportHeight * 0.7; // 心形最大高度占视口高度的70%
+            // --- 核心修改：更保守地计算心形的最大尺寸 ---
+            // 心形最大宽度和高度占据视口更小的比例
+            const maxHeartWidth = viewportWidth * 0.55; // 心形最大宽度占视口宽度的55%
+            const maxHeartHeight = viewportHeight * 0.6; // 心形最大高度占视口高度的60%
 
-            // 原始心形方程的X范围大约是[-256, 256]，Y范围大约是[-200, 300]
-            // 计算心形方程的最大/最小X和Y值
-            const originalMaxX = 16; // 16 * sin^3(t)的最大值
-            const originalMinX = -16;
-            const originalMaxY = 300; // (13 * cos(t) - 5 * cos(2t) - 2 * cos(3t) - cos(4t)) 约为 -16.89，乘-18后约304
-            const originalMinY = -200; // (13 * cos(t) - 5 * cos(2t) - 2 * cos(3t) - cos(4t)) 约为 11.6，乘-18后约-208
+            // 原始心形方程的X范围大约是[-16, 16]，Y范围大约是[-20, 12] （经过公式简化后的相对值）
+            // 考虑公式：x = scaleX * (16 * sin^3(t))
+            //         y = -scaleY * (13*cos(t) - 5*cos(2t) - 2*cos(3t) - cos(4t))
+            // 16 * sin^3(t) 范围是 [-16, 16]
+            // (13*cos(t) - 5*cos(2t) - 2*cos(3t) - cos(4t)) 范围大约是 [-17, 12]
+            const originalEquationRangeX = 16 * 2; // 32
+            const originalEquationRangeY = 17 + 12; // 29
 
-            // 动态计算缩放因子，使心形适应当前屏幕
-            // 避免心形过大或过小
-            const scaleFactorX = maxHeartWidth / (16 * 2); // 16 * 2 是公式中X的最大跨度
-            const scaleFactorY = maxHeartHeight / (originalMaxY - originalMinY); // Y的跨度
+            // 计算缩放因子
+            // 这里的 16 和 18 是原始公式的系数，我们希望新的心形尺寸由 maxHeartWidth/Height 决定
+            // 所以 (maxHeartWidth / originalEquationRangeX) * (原始X系数16)
+            // (maxHeartHeight / originalEquationRangeY) * (原始Y系数18)
+            const scaleFactorX = maxHeartWidth / originalEquationRangeX;
+            const scaleFactorY = maxHeartHeight / originalEquationRangeY;
 
-            // 取两者较小的，确保心形能完整显示
+            // 取两者较小的，确保心形能完整显示在屏幕内，且形状不变形
             const effectiveScale = Math.min(scaleFactorX, scaleFactorY);
 
-            // 最终的缩放参数
-            const scaleX = effectiveScale * 18; // 乘以原始的18
-            const scaleY = effectiveScale * 18; // 乘以原始的18
+            // 最终的缩放参数，这两个值直接决定了心形的物理尺寸
+            const scaleX = effectiveScale * 16; // 对应公式中的16
+            const scaleY = effectiveScale * 18; // 对应公式中的18，调整以匹配纵横比
 
-            const offsetY = -0.05 * viewportHeight; // 调整心形垂直位置，使中心更靠上，使用vh单位
+            // 垂直偏移量，使用vh确保相对性
+            // 调整心形垂直位置，使中心更靠上或居中，根据实际效果调整
+            const offsetY = -0.05 * viewportHeight; // 例如，向上偏移视口高度的5%
 
             for (let i = 0; i < count; i++) {
                 const t = (i / count) * Math.PI * 2; // t从0到2π
