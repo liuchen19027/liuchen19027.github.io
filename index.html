@@ -2,9 +2,25 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 关键优化：确保页面在移动设备上正确缩放，并使用设备宽度作为视口宽度 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>温馨提示 - 心形排列</title>
     <style>
+        /* 根字体大小，用于rem单位的基准，可以根据视口宽度动态调整 */
+        html {
+            font-size: 16px; /* 默认基准 */
+        }
+        @media (max-width: 768px) { /* 针对小屏幕/手机 */
+            html {
+                font-size: 14px; /* 手机上稍微缩小基准字体 */
+            }
+        }
+        @media (max-width: 480px) { /* 针对更小的手机屏幕 */
+            html {
+                font-size: 12px; /* 进一步缩小 */
+            }
+        }
+
         body {
             font-family: '微软雅黑', sans-serif;
             margin: 0;
@@ -15,6 +31,7 @@
             justify-content: center; /* 水平居中 */
             align-items: center; /* 垂直居中 */
             position: relative; /* 用于子元素的绝对定位 */
+            touch-action: manipulation; /* 阻止双击缩放，提升移动端体验 */
         }
 
         /* 提示框的样式 */
@@ -23,23 +40,26 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            border-radius: 8px; /* 圆角 */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 阴影效果稍微减弱，适配手机 */
-            font-size: 12px; /* 字体大小进一步缩小，适配手机 */
+            border-radius: 0.5rem; /* 圆角，使用rem */
+            box-shadow: 0 0.125rem 0.3125rem rgba(0, 0, 0, 0.15); /* 阴影效果，使用rem */
+            font-size: 0.75rem; /* 字体大小，使用rem */
             color: #333; /* 字体颜色 */
-            padding: 3px; /* 内边距也缩小 */
+            padding: 0.3rem 0.5rem; /* 内边距，使用rem */
             box-sizing: border-box; /* 包含padding在宽度内 */
             text-align: center;
             opacity: 0; /* 初始隐藏 */
-            transform: scale(0.9); /* 初始缩小 */
+            /* 使用transform进行居中和位移，性能更好 */
+            transform: translate(-50%, -50%) scale(0.8); /* 初始缩小 */
             transition: opacity 0.5s ease-out, transform 0.5s ease-out; /* 动画过渡 */
+            white-space: nowrap; /* 文本不换行 */
+            max-width: 100px; /* 设置一个最大宽度，防止内容过长 */
             /* z-index 将由JS动态设置 */
         }
 
         /* 提示框显示时的样式 */
         .tip-container.show {
             opacity: 1;
-            transform: scale(1);
+            transform: translate(-50%, -50%) scale(1);
             transition: opacity 0.8s ease-in, transform 0.8s ease-in; /* 显示时的动画慢一些 */
         }
     </style>
@@ -47,56 +67,11 @@
 <body>
     <script>
         const tips = [
-            '多喝水哦~',
-            '保持微笑呀',
-            '每天都要元气满满',
-            '记得吃水果',
-            '保持好心情',
-            '好好爱自己',
-            '我想你了',
-            '梦想成真',
-            '期待下一次见面',
-            '金榜题名',
-            '顺顺利利',
-            '早点休息',
-            '愿所有烦恼都消失',
-            '别熬夜',
-            '今天过得开心嘛',
-            '天冷了，多穿衣服',
-            '注意休息哦',
-            '按时吃饭呀',
-            '工作再忙也要照顾好自己',
-            '一切都会好起来的',
-            '加油，你是最棒的！',
-            '未来可期',
-            '祝你前程似锦',
-            '祝你心想事成',
-            '想念你的每一天',
-            '有你真好',
-            '你是我的小太阳',
-            '别忘了吃早餐',
-            '路上注意安全',
-            '保持阳光心态',
-            '凡事看开一点',
-            '你一定可以的！',
-            '好好享受生活',
-            '愿你每天都充满力量',
-            '记得补充维生素',
-            '睡前泡个脚会更舒服哦',
-            '想和你分享今天的一切',
-            '有我在呢',
-            '祝你万事如意',
-            '笑一笑，没什么大不了',
-            '给自己一点掌声',
-            '雨天记得带伞',
-            '天气炎热，注意防晒',
-            '保持愉悦的心情',
-            '做你想做的事吧',
-            '你的努力终会有回报',
-            '别给自己太大压力',
-            '偶尔偷个懒也无妨',
-            '期待与你再相见',
-            '我一直都在'
+            '多喝水哦~', '保持微笑呀', '每天都要元气满满',
+            '记得吃水果', '保持好心情', '好好爱自己', '我想你了',
+            '梦想成真', '期待下一次见面', '金榜题名',
+            '顺顺利利', '早点休息', '愿所有烦恼都消失',
+            '别熬夜', '今天过得开心嘛', '天冷了，多穿衣服'
         ];
 
         const bgColors = [
@@ -105,14 +80,15 @@
             '#7fffd4', '#ffe4e1', '#f0fff0', '#fff0f5', '#faebd7'
         ];
 
-        // --- 适配手机端：进一步缩小弹出窗口大小 ---
-        const TIP_WIDTH = 90;
-        const TIP_HEIGHT = 30;
+        // 提示框的建议尺寸（会根据内容自适应，但提供一个参考）
+        // 这里的单位不再是px，而是相对大小
+        const baseTipPaddingX = 0.5; // rem
+        const baseTipPaddingY = 0.3; // rem
+        const baseFontSize = 0.75; // rem
 
-        // --- 适配手机端：调整窗口数量和速度 ---
+        // 适配手机端：调整窗口数量和速度
         const totalTipsToGenerate = 80;
-        // --- 修改点：将弹出间隔改为 0.6 秒 (600 毫秒) ---
-        const delayBetweenTips = 300; // 从 150 变为 600 毫秒
+        const delayBetweenTips = 400; // 毫秒
 
         function getRandomElement(arr) {
             return arr[Math.floor(Math.random() * arr.length)];
@@ -121,10 +97,36 @@
         // 生成心形坐标点的函数
         function getHeartCoordinates(count) {
             const points = [];
-            // --- 适配手机端：缩小心形大小，以适应手机屏幕 ---
-            const scaleX = 18;
-            const scaleY = 18;
-            const offsetY = -0.5; // 调整心形垂直位置，使中心更靠上
+            // 根据当前视口宽度动态调整心形大小
+            // 例如，心形宽度为视口宽度的 60%-80%
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // 动态计算心形缩放比例，使其在屏幕上可见且比例适中
+            // 确保心形不会超出屏幕
+            const maxHeartWidth = viewportWidth * 0.7; // 心形最大宽度占视口宽度的70%
+            const maxHeartHeight = viewportHeight * 0.7; // 心形最大高度占视口高度的70%
+
+            // 原始心形方程的X范围大约是[-256, 256]，Y范围大约是[-200, 300]
+            // 计算心形方程的最大/最小X和Y值
+            const originalMaxX = 16; // 16 * sin^3(t)的最大值
+            const originalMinX = -16;
+            const originalMaxY = 300; // (13 * cos(t) - 5 * cos(2t) - 2 * cos(3t) - cos(4t)) 约为 -16.89，乘-18后约304
+            const originalMinY = -200; // (13 * cos(t) - 5 * cos(2t) - 2 * cos(3t) - cos(4t)) 约为 11.6，乘-18后约-208
+
+            // 动态计算缩放因子，使心形适应当前屏幕
+            // 避免心形过大或过小
+            const scaleFactorX = maxHeartWidth / (16 * 2); // 16 * 2 是公式中X的最大跨度
+            const scaleFactorY = maxHeartHeight / (originalMaxY - originalMinY); // Y的跨度
+
+            // 取两者较小的，确保心形能完整显示
+            const effectiveScale = Math.min(scaleFactorX, scaleFactorY);
+
+            // 最终的缩放参数
+            const scaleX = effectiveScale * 18; // 乘以原始的18
+            const scaleY = effectiveScale * 18; // 乘以原始的18
+
+            const offsetY = -0.05 * viewportHeight; // 调整心形垂直位置，使中心更靠上，使用vh单位
 
             for (let i = 0; i < count; i++) {
                 const t = (i / count) * Math.PI * 2; // t从0到2π
@@ -133,13 +135,14 @@
                 const x = scaleX * (16 * Math.pow(Math.sin(t), 3));
                 const y = -scaleY * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)); // 负号使心形朝上
 
-                points.push({ x: x, y: y + offsetY * scaleY }); // 加上偏移量
+                points.push({ x: x, y: y + offsetY }); // 加上偏移量
             }
             return points;
         }
 
         let heartPoints = [];
         let generatedCount = 0;
+        const tipElements = []; // 用于存储生成的提示框元素
 
         function createAndDisplayTipInHeartShape() {
             if (generatedCount >= totalTipsToGenerate) {
@@ -149,35 +152,33 @@
             // 获取当前提示框应该放置的心形坐标
             const point = heartPoints[generatedCount];
 
-            const tip = getRandomElement(tips);
+            const tipText = getRandomElement(tips);
             const bgColor = getRandomElement(bgColors);
 
             const newTipElement = document.createElement('div');
             newTipElement.classList.add('tip-container');
-            newTipElement.textContent = tip;
+            newTipElement.textContent = tipText;
             newTipElement.style.backgroundColor = bgColor;
-            // 动态设置窗口大小
-            newTipElement.style.width = `${TIP_WIDTH}px`;
-            newTipElement.style.height = `${TIP_HEIGHT}px`;
 
-            // 获取body的中心点
-            // 在手机端，innerWidth/innerHeight 更能代表可用屏幕空间
-            const bodyCenterX = window.innerWidth / 2;
-            const bodyCenterY = window.innerHeight / 2;
+            // 定位：使用left/top 50% 配合 transform translate(-50%, -50%) 居中
+            // 然后再叠加心形坐标的偏移
+            newTipElement.style.left = `50%`;
+            newTipElement.style.top = `50%`;
+            // 使用 transform 叠加偏移，可以保证元素中心对齐坐标点，且性能更优
+            newTipElement.style.transform = `translate(calc(-50% + ${point.x}px), calc(-50% + ${point.y}px)) scale(0.8)`;
 
-            // 计算实际的 top 和 left 值，使心形中心对齐body中心
-            // 并考虑提示框自身的大小，使其中心点位于心形坐标点上
-            newTipElement.style.left = `${bodyCenterX + point.x - TIP_WIDTH / 2}px`;
-            newTipElement.style.top = `${bodyCenterY + point.y - TIP_HEIGHT / 2}px`;
 
             // 设置 z-index 以实现堆叠效果，后生成的在前面
             newTipElement.style.zIndex = generatedCount + 1;
 
             document.body.appendChild(newTipElement);
+            tipElements.push(newTipElement); // 存储元素以便后续更新
 
             // 延迟一点点时间（让浏览器渲染元素后再添加'show'类）
             setTimeout(() => {
                 newTipElement.classList.add('show');
+                // 确保transform属性在show类添加后能正确过渡
+                newTipElement.style.transform = `translate(calc(-50% + ${point.x}px), calc(-50% + ${point.y}px)) scale(1)`;
             }, 10);
 
             generatedCount++;
@@ -186,29 +187,34 @@
             }
         }
 
+        // 重新定位所有已生成的提示框
+        function repositionTips() {
+            heartPoints = getHeartCoordinates(totalTipsToGenerate); // 重新计算心形点
+
+            tipElements.forEach((tipElement, index) => {
+                if (tipElement.classList.contains('show') && index < heartPoints.length) {
+                    const point = heartPoints[index];
+                    // 重新应用transform，使其在新的心形坐标上居中
+                    tipElement.style.transform = `translate(calc(-50% + ${point.x}px), calc(-50% + ${point.y}px)) ${tipElement.classList.contains('show') ? 'scale(1)' : 'scale(0.8)'}`;
+                }
+            });
+        }
+
         // 页面加载完成后开始生成提示
         window.addEventListener('load', () => {
-            // 在加载时，根据当前窗口大小生成心形点
-            heartPoints = getHeartCoordinates(totalTipsToGenerate);
+            repositionTips(); // 初始计算并定位
             createAndDisplayTipInHeartShape();
         });
 
         // 窗口大小改变时，重新计算并重新定位所有提示框
         // 这对于手机横竖屏切换时尤其重要
+        // 使用防抖动 (debounce) 优化 resize 事件，避免频繁触发
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            const bodyCenterX = window.innerWidth / 2;
-            const bodyCenterY = window.innerHeight / 2;
-
-            // 重新生成心形点，以适应新的窗口大小
-            heartPoints = getHeartCoordinates(totalTipsToGenerate);
-            const existingTips = document.querySelectorAll('.tip-container');
-            existingTips.forEach((tipElement, index) => {
-                if (tipElement.classList.contains('show') && index < heartPoints.length) {
-                    const point = heartPoints[index];
-                    tipElement.style.left = `${bodyCenterX + point.x - TIP_WIDTH / 2}px`;
-                    tipElement.style.top = `${bodyCenterY + point.y - TIP_HEIGHT / 2}px`;
-                }
-            });
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                repositionTips();
+            }, 200); // 200ms 后执行，避免在窗口大小调整过程中频繁计算
         });
     </script>
 </body>
