@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 关键优化：确保页面在移动设备上正确缩放，并使用设备宽度作为视口宽度 -->
+    <!-- 确保页面在移动设备上正确缩放，并使用设备宽度作为视口宽度 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>温馨提示 - 心形排列</title>
     <style>
@@ -74,8 +74,20 @@
             '记得吃水果', '保持好心情', '好好爱自己', '我想你了',
             '梦想成真', '期待下一次见面', '金榜题名',
             '顺顺利利', '早点休息', '愿所有烦恼都消失',
-            '别熬夜', '今天过得开心嘛', '天冷了，多穿衣服'
-        ];
+            '别熬夜', '今天过得开心嘛', '天冷了，多穿衣服',
+            '注意休息哦', '按时吃饭呀', '工作再忙也要照顾好自己',
+            '一切都会好起来的', '加油，你是最棒的！', '未来可期',
+            '祝你前程似锦', '祝你心想事成', '想念你的每一天',
+            '有你真好', '你是我的小太阳', '别忘了吃早餐',
+            '路上注意安全', '保持阳光心态', '凡事看开一点',
+            '你一定可以的！', '好好享受生活', '愿你每天都充满力量',
+            '记得补充维生素', '睡前泡个脚会更舒服哦', '想和你分享今天的一切',
+            '有我在呢', '祝你万事如意', '笑一笑，没什么大不了',
+            '给自己一点掌声', '雨天记得带伞', '天气炎热，注意防晒',
+            '保持愉悦的心情', '做你想做的事吧', '你的努力终会有回报',
+            '别给自己太大压力', '偶尔偷个懒也无妨', '期待与你再相见',
+            '我一直都在'
+        ]; // 完整提示列表
 
         const bgColors = [
             '#ffb6c1', '#87ceeb', '#90ee90', '#e6e6fa',
@@ -84,8 +96,8 @@
         ];
 
         // --- 核心修改：减少生成总数和调整生成速度 ---
-        const totalTipsToGenerate = 45; // 从80减少到45，大大减少元素数量
-        const delayBetweenTips = 250; // 从400减少到250毫秒，加快生成速度
+        const totalTipsToGenerate = 45; // 保持45个，如果觉得不够可以适当增加
+        const delayBetweenTips = 250; // 毫秒
 
         function getRandomElement(arr) {
             return arr[Math.floor(Math.random() * arr.length)];
@@ -97,43 +109,61 @@
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
 
-            // --- 核心修改：更保守地计算心形的最大尺寸 ---
-            // 心形最大宽度和高度占据视口更小的比例
-            const maxHeartWidth = viewportWidth * 0.55; // 心形最大宽度占视口宽度的55%
-            const maxHeartHeight = viewportHeight * 0.6; // 心形最大高度占视口高度的60%
+            // --- 修复点：调整心形最大尺寸比例，并修正原始方程范围的理解 ---
+            // 确保心形占据屏幕的合理比例，为提示框留出更多空间
+            const targetHeartWidthRatio = 0.6; // 心形宽度占视口宽度的比例
+            const targetHeartHeightRatio = 0.65; // 心形高度占视口高度的比例
 
-            // 原始心形方程的X范围大约是[-16, 16]，Y范围大约是[-20, 12] （经过公式简化后的相对值）
-            // 考虑公式：x = scaleX * (16 * sin^3(t))
-            //         y = -scaleY * (13*cos(t) - 5*cos(2t) - 2*cos(3t) - cos(4t))
-            // 16 * sin^3(t) 范围是 [-16, 16]
-            // (13*cos(t) - 5*cos(2t) - 2*cos(3t) - cos(4t)) 范围大约是 [-17, 12]
-            const originalEquationRangeX = 16 * 2; // 32
-            const originalEquationRangeY = 17 + 12; // 29
+            const maxHeartWidth = viewportWidth * targetHeartWidthRatio;
+            const maxHeartHeight = viewportHeight * targetHeartHeightRatio;
 
-            // 计算缩放因子
-            // 这里的 16 和 18 是原始公式的系数，我们希望新的心形尺寸由 maxHeartWidth/Height 决定
-            // 所以 (maxHeartWidth / originalEquationRangeX) * (原始X系数16)
-            // (maxHeartHeight / originalEquationRangeY) * (原始Y系数18)
-            const scaleFactorX = maxHeartWidth / originalEquationRangeX;
-            const scaleFactorY = maxHeartHeight / originalEquationRangeY;
+            // 原始心形方程的 X 和 Y 范围 (通过对公式求值分析得到)
+            // 16 * sin^3(t) 的理论范围是 [-16, 16]
+            const originalMaxXRange = 16 * 2; // 32
 
-            // 取两者较小的，确保心形能完整显示在屏幕内，且形状不变形
+            // (13*cos(t) - 5*cos(2t) - 2*cos(3t) - cos(4t)) 的最大值约 11.6，最小值约 -16.89
+            // 乘以负号后，Y 值的范围大约是 [-11.6, 16.89]
+            const originalMinYValue = -11.6; // 实际方程Y轴的最小值
+            const originalMaxYValue = 16.89; // 实际方程Y轴的最大值
+            const originalMaxYRange = originalMaxYValue - originalMinYValue; // 实际Y轴的跨度
+
+            // 计算 X 和 Y 的缩放因子
+            const scaleFactorX = maxHeartWidth / originalMaxXRange;
+            const scaleFactorY = maxHeartHeight / originalMaxYRange;
+
+            // 取两者较小值，以确保心形完全适应屏幕，并保持其纵横比
             const effectiveScale = Math.min(scaleFactorX, scaleFactorY);
 
-            // 最终的缩放参数，这两个值直接决定了心形的物理尺寸
-            const scaleX = effectiveScale * 16; // 对应公式中的16
-            const scaleY = effectiveScale * 18; // 对应公式中的18，调整以匹配纵横比
+            // 最终的 scaleX 和 scaleY，这两个值直接乘以参数方程的系数
+            // 原始方程：x = A * (16 * sin^3(t)), y = -B * (13*cos(t) - ...)
+            // 这里的 scaleX 和 scaleY 就对应着 A 和 B
+            // 错误修复：这里的 scaleX 和 scaleY 应该是直接应用于心形方程的整体缩放，
+            // 而不是再乘以原始方程内部的系数。
+            // 它们代表着 1单位的图形在屏幕上对应多少像素。
+            const finalScale = effectiveScale; // 直接使用 effectiveScale 作为最终缩放
 
-            // 垂直偏移量，使用vh确保相对性
-            // 调整心形垂直位置，使中心更靠上或居中，根据实际效果调整
-            const offsetY = -0.05 * viewportHeight; // 例如，向上偏移视口高度的5%
+            // 垂直偏移量，确保心形在垂直方向上居中或稍微偏上
+            // originalMinYValue 和 originalMaxYValue 是基于未缩放前的Y轴理论值
+            // 我们需要将整个心形垂直平移，使其在视口中居中
+            // 缩放后的心形实际高度 = originalMaxYRange * finalScale
+            // 缩放后的心形顶部到中心线的距离 = (originalMaxYValue - originalMaxYRange / 2) * finalScale
+            // 缩放后的心形底部到中心线的距离 = (originalMinYValue + originalMaxYRange / 2) * finalScale
+            // 为了让心形垂直居中，我们需要将心形的中心点 (originalMinYValue + originalMaxYRange / 2) * finalScale 移到视口中心。
+            // 目标中心Y = viewportHeight / 2
+            // 原始心形中心Y（未经缩放）= (originalMaxYValue + originalMinYValue) / 2
+            // 缩放后的心形中心Y = originalHeartCenterY * finalScale
+            // 我们希望心形中心在 Y 轴上的偏移量，可以使得心形整体略微偏上。
+            const initialYOffset = -((originalMaxYValue + originalMinYValue) / 2) * finalScale; // 使心形中心对齐Y=0
+            const additionalOffsetY = -0.05 * viewportHeight; // 额外向上偏移视口高度的5%
+
+            const offsetY = initialYOffset + additionalOffsetY; // 最终的Y轴偏移量
 
             for (let i = 0; i < count; i++) {
                 const t = (i / count) * Math.PI * 2; // t从0到2π
 
                 // 心形参数方程
-                const x = scaleX * (16 * Math.pow(Math.sin(t), 3));
-                const y = -scaleY * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)); // 负号使心形朝上
+                const x = finalScale * (16 * Math.pow(Math.sin(t), 3));
+                const y = -finalScale * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)); // 负号使心形朝上
 
                 points.push({ x: x, y: y + offsetY }); // 加上偏移量
             }
@@ -160,11 +190,9 @@
             newTipElement.textContent = tipText;
             newTipElement.style.backgroundColor = bgColor;
 
-            // 定位：使用left/top 50% 配合 transform translate(-50%, -50%) 居中
-            // 然后再叠加心形坐标的偏移
             newTipElement.style.left = `50%`;
             newTipElement.style.top = `50%`;
-            // 使用 transform 叠加偏移，可以保证元素中心对齐坐标点，且性能更优
+            // 修正：确保初始的transform也带有心形坐标，这样transition才能正确从初始位置开始
             newTipElement.style.transform = `translate(calc(-50% + ${point.x}px), calc(-50% + ${point.y}px)) scale(0.8)`;
 
 
@@ -177,7 +205,7 @@
             // 延迟一点点时间（让浏览器渲染元素后再添加'show'类）
             setTimeout(() => {
                 newTipElement.classList.add('show');
-                // 确保transform属性在show类添加后能正确过渡
+                // 修正：当'show'类被添加时，才将transform的scale设置为1，使其动画生效
                 newTipElement.style.transform = `translate(calc(-50% + ${point.x}px), calc(-50% + ${point.y}px)) scale(1)`;
             }, 10);
 
@@ -195,20 +223,25 @@
                 if (tipElement.classList.contains('show') && index < heartPoints.length) {
                     const point = heartPoints[index];
                     // 重新应用transform，使其在新的心形坐标上居中
-                    tipElement.style.transform = `translate(calc(-50% + ${point.x}px), calc(-50% + ${point.y}px)) ${tipElement.classList.contains('show') ? 'scale(1)' : 'scale(0.8)'}`;
+                    // 保持当前的scale状态 (scale(1) 如果已显示，scale(0.8) 如果是初始状态)
+                    const currentScale = tipElement.classList.contains('show') ? 'scale(1)' : 'scale(0.8)';
+                    tipElement.style.transform = `translate(calc(-50% + ${point.x}px), calc(-50% + ${point.y}px)) ${currentScale}`;
                 }
             });
         }
 
         // 页面加载完成后开始生成提示
         window.addEventListener('load', () => {
+            // 确保 tips 数组有足够的内容，防止因为内容过少而循环取不到值
+            if (tips.length === 0) {
+                console.warn("Tips array is empty!");
+                return;
+            }
             repositionTips(); // 初始计算并定位
             createAndDisplayTipInHeartShape();
         });
 
         // 窗口大小改变时，重新计算并重新定位所有提示框
-        // 这对于手机横竖屏切换时尤其重要
-        // 使用防抖动 (debounce) 优化 resize 事件，避免频繁触发
         let resizeTimeout;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
